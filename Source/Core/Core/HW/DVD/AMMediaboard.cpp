@@ -1968,6 +1968,17 @@ bool GetTestMenu()
   return s_test_menu;
 }
 
+static void CloseAllSockets()
+{
+  for (u32 i = FIRST_VALID_FD; i < std::size(s_sockets); ++i)
+  {
+    if (s_sockets[i] != SOCKET_ERROR)
+    {
+      closesocket(s_sockets[i]);
+    }
+  }
+}
+
 void Shutdown()
 {
   s_netcfg.Close();
@@ -1977,12 +1988,60 @@ void Shutdown()
   s_dimm.Close();
   s_dimm_disc.clear();
 
-  // Close all sockets
-  for (u32 i = FIRST_VALID_FD; i < std::size(s_sockets); ++i)
+  CloseAllSockets();
+}
+
+void DoState(PointerWrap& p)
+{
+  p.Do(s_firmware_map);
+  p.Do(s_test_menu);
+  p.Do(s_timeouts);
+  p.Do(s_last_error);
+  p.Do(s_gcam_key_a);
+  p.Do(s_gcam_key_b);
+  p.Do(s_gcam_key_c);
+  p.Do(s_firmware);
+  p.Do(s_media_buffer_32);
+  p.Do(s_network_command_buffer);
+  p.Do(s_network_buffer);
+  p.Do(s_allnet_buffer);
+  p.Do(s_allnet_settings);
+
+  // TODO: Handle the files better.
+  // Data corruption is probably currently possible.
+
+  // s_netcfg
+  // s_netctrl
+  // s_extra
+  // s_backup
+  // s_dimm
+
+  // TODO: Handle sockets better.
+  // For now, we just recreate a TCP socket for any socket that existed.
+  // We should probably re-bind sockets and handle UDP sockets.
+
+  GuestFdSet created_sockets{};
+  if (p.IsWriteMode() || p.IsVerifyMode())
   {
-    if (s_sockets[i] != SOCKET_ERROR)
+    for (u32 i = FIRST_VALID_FD; i < std::size(s_sockets); ++i)
     {
-      closesocket(s_sockets[i]);
+      if (s_sockets[i] != SOCKET_ERROR)
+        created_sockets.SetFd(GuestSocket(i));
+    }
+  }
+
+  p.Do(created_sockets);
+
+  if (p.IsReadMode())
+  {
+    CloseAllSockets();
+
+    for (u32 i = FIRST_VALID_FD; i < std::size(s_sockets); ++i)
+    {
+      if (!created_sockets.IsFdSet(GuestSocket(i)))
+        continue;
+
+      s_sockets[i] = socket(AF_INET, SOCK_STREAM, 0);
     }
   }
 }

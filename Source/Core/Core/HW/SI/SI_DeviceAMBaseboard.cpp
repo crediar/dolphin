@@ -2738,4 +2738,68 @@ GCPadStatus CSIDevice_AMBaseboard::GetPadStatus()
   return pad_status;
 }
 
+void CSIDevice_AMBaseboard::DoState(PointerWrap& p)
+{
+  p.Do(m_origin);
+  p.Do(m_mode);
+  p.Do(m_timer_button_combo_start);
+  p.Do(m_last_button_combo);
+
+  p.Do(m_last);
+  p.Do(m_lastptr);
+
+  p.Do(m_coin);
+  p.Do(m_coin_pressed);
+
+  p.Do(m_ic_card_data);
+
+  // Setup IC-card
+  p.Do(m_ic_card_state);
+  p.Do(m_ic_card_status);
+  p.Do(m_ic_card_session);
+
+  p.Do(m_ic_write_buffer);
+  p.Do(m_ic_write_offset);
+  p.Do(m_ic_write_size);
+
+  p.Do(m_card_memory);
+  p.Do(m_card_read_packet);
+  p.Do(m_card_buffer);
+
+  // Setup CARD
+  p.Do(m_card_memory_size);
+  p.Do(m_card_is_inserted);
+
+  p.Do(m_card_command);
+  p.Do(m_card_clean);
+  p.Do(m_card_write_length);
+  p.Do(m_card_wrote);
+  p.Do(m_card_read_length);
+  p.Do(m_card_read);
+  p.Do(m_card_bit);
+  p.Do(m_card_shutter);
+  p.Do(m_card_state_call_count);
+  p.Do(m_card_offset);
+
+  // Serial
+  p.Do(m_wheel_init);
+
+  p.Do(m_motor_init);
+  p.Do(m_motor_reply);
+  p.Do(m_motor_force_y);
+
+  // F-Zero AX (DX)
+  p.Do(m_fzdx_seatbelt);
+  p.Do(m_fzdx_motion_stop);
+  p.Do(m_fzdx_sensor_right);
+  p.Do(m_fzdx_sensor_left);
+  p.Do(m_rx_reply);
+
+  // F-Zero AX (CyCraft)
+  p.Do(m_fzcc_seatbelt);
+  p.Do(m_fzcc_sensor);
+  p.Do(m_fzcc_emergency);
+  p.Do(m_fzcc_service);
+}
+
 }  // namespace SerialInterface

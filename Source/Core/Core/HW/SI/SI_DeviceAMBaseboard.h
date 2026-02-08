@@ -71,6 +71,8 @@ public:
   static bool NetPlay_GetInput(int pad_num, GCPadStatus* status);
   static int NetPlay_InGamePadToLocalPad(int pad_num);
 
+  void DoState(PointerWrap&) override;
+
 protected:
   struct SOrigin
   {

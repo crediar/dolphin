@@ -768,7 +768,7 @@ static void AMMBCommandRecv(u32 parameter_offset, u32 network_buffer_base)
   int ret = recv(fd, reinterpret_cast<char*>(s_network_buffer + off), len, 0);
   const int err = WSAGetLastError();
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: recv( {}, 0x{:08x}, {} ):{} {}", fd, off, len, ret, err);
+  DEBUG_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: recv( {}, 0x{:08x}, {} ):{} {}", fd, off, len, ret, err);
 
   s_media_buffer[1] = s_media_buffer[8];
   s_media_buffer_32[1] = ret;
@@ -797,8 +797,8 @@ static void AMMBCommandSend(u32 parameter_offset, u32 network_buffer_base)
   const int ret = send(fd, reinterpret_cast<char*>(s_network_buffer + off), len, SEND_FLAGS);
   const int err = WSAGetLastError();
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: send( {}({}), 0x{:08x}, {} ): {} {}", fd,
-                 u32(guest_socket), off, len, ret, err);
+  DEBUG_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: send( {}({}), 0x{:08x}, {} ): {} {}", fd,
+                u32(guest_socket), off, len, ret, err);
 
   s_media_buffer[1] = s_media_buffer[8];
   s_media_buffer_32[1] = ret;
@@ -812,8 +812,8 @@ static void AMMBCommandSocket(u32 parameter_offset)
 
   const GuestSocket guest_socket = socket_(af, type, IPPROTO_TCP);
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: socket( {}, {}, IPPROTO_TCP ):{}", af, type,
-                 u32(guest_socket));
+  INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: socket( {}, {}, IPPROTO_TCP ):{}", af, type,
+               u32(guest_socket));
 
   s_media_buffer[1] = 0;
   s_media_buffer_32[1] = u32(guest_socket);
@@ -826,7 +826,7 @@ static void AMMBCommandClosesocket(u32 parameter_offset)
 
   const int ret = closesocket(fd);
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: closesocket( {}({}) ):{}", fd, u32(guest_socket), ret);
+  INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: closesocket( {}({}) ):{}", fd, u32(guest_socket), ret);
 
   if (u32(guest_socket) < std::size(s_sockets))
     s_sockets[u32(guest_socket)] = SOCKET_ERROR;
@@ -858,9 +858,9 @@ static void AMMBCommandConnect(u32 parameter_offset, u32 network_buffer_base)
 
   const int ret = NetDIMMConnect(guest_socket, addr);
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: connect( {}, ({},{},{}:{}), {} ):{}", u32(guest_socket),
-                 addr.struct_size, addr.ip_family, Common::IPAddressToString(addr.ip_address),
-                 ntohs(addr.port), len, ret);
+  INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: connect( {}, ({},{},{}:{}), {} ):{}", u32(guest_socket),
+               addr.struct_size, addr.ip_family, Common::IPAddressToString(addr.ip_address),
+               ntohs(addr.port), len, ret);
 
   s_media_buffer[1] = s_media_buffer[8];
   s_media_buffer_32[1] = ret;
@@ -890,7 +890,7 @@ static void AMMBCommandAccept(u32 parameter_offset, u32 network_buffer_base)
     socklen_t addrlen = sizeof(addr);
     ret = u32(NetDIMMAccept(guest_socket, &addr, &addrlen));
 
-    NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: accept( {} ):{}", u32(guest_socket), int(ret));
+    INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: accept( {} ):{}", u32(guest_socket), int(ret));
 
     auto* const addrlen_ptr =
         GetSafePtr(s_network_command_buffer, network_buffer_base, addrlen_off, sizeof(u32));
@@ -1000,9 +1000,9 @@ static void AMMBCommandSelect(u32 parameter_offset, u32 network_buffer_base)
     WARN_LOG_FMT(AMMEDIABOARD, "AMMBCommandSelect: Infinite timout!");
   }
 
-  NOTICE_LOG_FMT(
-      AMMEDIABOARD_NET, "GC-AM: select( {}, 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} ) timeout={}", nfds,
-      readfds_offset, writefds_offset, exceptfds_offset, timeout_offset, timeout.count());
+  INFO_LOG_FMT(AMMEDIABOARD_NET,
+               "GC-AM: select( {}, 0x{:08x} 0x{:08x} 0x{:08x} 0x{:08x} ) timeout={}", nfds,
+               readfds_offset, writefds_offset, exceptfds_offset, timeout_offset, timeout.count());
 
   // Fill with the host sockets for each guest socket less-than `nfds` in each GuestFdSet.
   std::vector<WSAPOLLFD> pollfds(nfds, WSAPOLLFD{.fd = INVALID_SOCKET});
@@ -1028,7 +1028,7 @@ static void AMMBCommandSelect(u32 parameter_offset, u32 network_buffer_base)
     WriteGuestFdSetFromPollFds(guest_exceptfds_ptr, pollfds, POLLPRI);
   }
 
-  NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: select result: {}", ret);
+  INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: select result: {}", ret);
 
   s_media_buffer[1] = 0;
   s_media_buffer_32[1] = ret;
@@ -1280,8 +1280,8 @@ u32 ExecuteCommand(std::array<u32, 3>& dicmd_buf, u32* diimm_buf, u32 address, u
     {
       const AMMBCommand ammb_command = Common::BitCastPtr<AMMBCommand>(s_media_buffer + 0x202);
 
-      INFO_LOG_FMT(AMMEDIABOARD, "GC-AM: Execute command: (2){0:04X}",
-                   static_cast<u16>(ammb_command));
+      DEBUG_LOG_FMT(AMMEDIABOARD, "GC-AM: Execute command: (2){0:04X}",
+                    static_cast<u16>(ammb_command));
 
       memcpy(s_media_buffer, s_media_buffer + 0x200, 0x20);
       memset(s_media_buffer + 0x200, 0, 0x20);
@@ -1375,9 +1375,9 @@ u32 ExecuteCommand(std::array<u32, 3>& dicmd_buf, u32* diimm_buf, u32 address, u
                         err_msg);
         }
 
-        NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: bind( {}, ({},{:08x}:{}), {} ):{} ({})",
-                       host_socket, addr.sin_family, addr.sin_addr.s_addr,
-                       Common::swap16(addr.sin_port), len, ret, err);
+        INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: bind( {}, ({},{:08x}:{}), {} ):{} ({})", host_socket,
+                     addr.sin_family, addr.sin_addr.s_addr, Common::swap16(addr.sin_port), len, ret,
+                     err);
 
         s_media_buffer_32[1] = ret;
         s_last_error = SSC_SUCCESS;
@@ -1467,8 +1467,8 @@ u32 ExecuteCommand(std::array<u32, 3>& dicmd_buf, u32* diimm_buf, u32 address, u
               ret = WSAGetLastError();
           }
 
-          NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: SetTimeOuts( {}({}), {}, {}, {} ):{}",
-                         host_socket, u32(guest_socket), timeout_a, timeout_b, timeout_c, ret);
+          INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: SetTimeOuts( {}({}), {}, {}, {} ):{}", host_socket,
+                       u32(guest_socket), timeout_a, timeout_b, timeout_c, ret);
         }
         else
         {
@@ -1497,8 +1497,8 @@ u32 ExecuteCommand(std::array<u32, 3>& dicmd_buf, u32* diimm_buf, u32 address, u
       {
         const auto fd = GetHostSocket(GuestSocket(s_media_buffer_32[2]));
 
-        NOTICE_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: GetLastError( {}({}) ):{}", fd,
-                       s_media_buffer_32[2], s_last_error);
+        INFO_LOG_FMT(AMMEDIABOARD_NET, "GC-AM: GetLastError( {}({}) ):{}", fd, s_media_buffer_32[2],
+                     s_last_error);
 
         // Good enough, assuming it's called for the same socket right after an error.
         // TODO: Implement something similar per socket.
@@ -1640,8 +1640,8 @@ u32 ExecuteCommand(std::array<u32, 3>& dicmd_buf, u32* diimm_buf, u32 address, u
       {
         const AMMBCommand ammb_command = Common::BitCastPtr<AMMBCommand>(s_media_buffer + 0x22);
 
-        INFO_LOG_FMT(AMMEDIABOARD, "GC-AM: Execute command: (1):{0:04X}",
-                     static_cast<u16>(ammb_command));
+        DEBUG_LOG_FMT(AMMEDIABOARD, "GC-AM: Execute command: (1):{0:04X}",
+                      static_cast<u16>(ammb_command));
 
         memset(s_media_buffer, 0, 0x20);
 
